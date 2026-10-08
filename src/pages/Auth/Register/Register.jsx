@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router';
 import useAuth from '../../../hooks/useAuth';
 import SocialLogin from '../SocialLogin/SocialLogin';
 import axios from 'axios';
+import useAxios from '../../../hooks/useAxios';
+import Swal from 'sweetalert2';
 
 const Register = () => {
   const {
@@ -13,35 +15,55 @@ const Register = () => {
   } = useForm();
   const { registerUser, updateUserProfile } = useAuth();
   const navigate = useNavigate();
+  const axiosSecure = useAxios();
+  const [loading, setLoading] = useState(false);
 
-  const onSubmit = data => {
-    console.log(data.photo[0]);
+  const onSubmit = async data => {
     const profileImg = data.photo[0];
-    registerUser(data.email, data.password)
-      .then(result => {
-        console.log(result.user);
-        // store the image and get the photo url
-        const formData = new FormData();
-        formData.append('image', profileImg);
-        const image_API_URL = `https://api.imgbb.com/1/upload?expiration=600&key=${import.meta.env.VITE_image_host_key}`;
-        axios.post(image_API_URL, formData).then(res => {
-          console.log(res.data.data.url);
-          // updet Profile
-          const userProfile = {
-            displayName: data.name,
-            photoURL: res.data.data.url,
-          };
-          updateUserProfile(userProfile)
-            .then(() => {
-              console.log('user profile update');
-              navigate('/');
-            })
-            .catch(error => console.log(error));
-        });
-      })
-      .catch(error => {
-        console.log(error);
+    setLoading(true);
+
+    try {
+      // ১. Firebase-এ একাউন্ট তৈরি
+      await registerUser(data.email, data.password);
+
+      // ২. ছবি imgbb-তে আপলোড
+      const formData = new FormData();
+      formData.append('image', profileImg);
+      const image_API_URL = `https://api.imgbb.com/1/upload?key=${import.meta.env.VITE_image_host_key}`;
+      const imgRes = await axios.post(image_API_URL, formData);
+      const photoURL = imgRes.data.data.url;
+
+      // ৩. Firebase profile আপডেট
+      await updateUserProfile({
+        displayName: data.name,
+        photoURL: photoURL,
       });
+
+      // ৪. MongoDB-তে ইউজার সেভ
+      const userInfo = {
+        name: data.name,
+        email: data.email,
+        photo: photoURL,
+        role: data.role,
+      };
+      const otpRes = await axiosSecure.post('/send-otp', userInfo);
+
+      console.log('OTP response:', otpRes.data);
+
+      if (otpRes.data.success) {
+        navigate('/verify-otp', { state: { userInfo } });
+      }
+    } catch (error) {
+      // যেকোনো ধাপে সমস্যা হলে একটাই error alert
+      console.log(error);
+      Swal.fire({
+        icon: 'error',
+        title: 'রেজিস্ট্রেশন ব্যর্থ হয়েছে',
+        text: error.message,
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -137,10 +159,10 @@ const Register = () => {
               <option value="" className="bg-white text-black">
                 Account Type
               </option>
-              <option value="student" className="bg-white text-black">
+              <option value="jobseeker" className="bg-white text-black">
                 Job Seeker
               </option>
-              <option value="tutor" className="bg-white text-black">
+              <option value="employer" className="bg-white text-black">
                 Employer
               </option>
             </select>
@@ -156,9 +178,16 @@ const Register = () => {
              bg-gradient-to-r from-purple-600 to-blue-600
              hover:from-purple-700 hover:to-blue-700
              shadow-lg shadow-purple-500/20
-             transition-all duration-300"
+             transition-all duration-300 cursor-pointer"
             >
-              Register
+              {loading ? (
+                <>
+                  <span className="loading loading-spinner loading-sm"></span>
+                  Registering...
+                </>
+              ) : (
+                'Register'
+              )}
             </button>
 
             <p className="text-white">

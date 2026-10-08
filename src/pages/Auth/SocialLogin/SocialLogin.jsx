@@ -1,26 +1,45 @@
 import React from 'react';
 import useAuth from '../../../hooks/useAuth';
 import { useNavigate } from 'react-router';
+import useAxios from '../../../hooks/useAxios';
+import Swal from 'sweetalert2';
 
 const SocialLogin = () => {
   const { signInGoogle } = useAuth();
   const navigate = useNavigate();
-  const handelGoogleSigenIn = () => {
-    signInGoogle()
-      .then(result => {
-        console.log(result.user);
-        navigate('/');
-      })
-      .catch(error => {
-        console.log(error);
+  const axiosSecure = useAxios();
+
+  const handelGoogleSigenIn = async () => {
+    try {
+      const result = await signInGoogle();
+      const user = result.user;
+
+      const userInfo = {
+        name: user.displayName,
+        email: user.email,
+        photo: user.photoURL,
+        role: 'jobseeker', // Google login-এ role বাছার সুযোগ নেই, তাই ডিফল্ট
+      };
+
+      await axiosSecure.post('/users', userInfo);
+
+      navigate('/');
+    } catch (error) {
+      console.log(error);
+      Swal.fire({
+        icon: 'error',
+        title: 'লগইন ব্যর্থ হয়েছে',
+        text: error.message,
       });
+    }
   };
+
   return (
     <div className="text-center mb-8">
       <p className="text-white mb-2">Or</p>
       <button
         onClick={handelGoogleSigenIn}
-        class="btn bg-white text-black border-[#e5e5e5]"
+        className="btn bg-white text-black border-[#e5e5e5]"
       >
         <svg
           aria-label="Google logo"
