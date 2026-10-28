@@ -7,6 +7,17 @@ import axios from 'axios';
 import useAxios from '../../../hooks/useAxios';
 import Swal from 'sweetalert2';
 
+// বারবার লেখা এড়াতে ইনপুটের স্টাইল একবারেই রাখলাম
+const inputStyle = `w-full h-10 px-3 text-sm rounded-xl text-white placeholder-white/60
+  bg-gradient-to-b from-white/30 to-white/10
+  border border-white/40 backdrop-blur-md
+  shadow-[0_4px_10px_rgba(0,0,0,0.15),inset_0_1px_0_rgba(255,255,255,0.5)]
+  outline-none transition-all duration-200
+  focus:border-purple-400 focus:ring-2 focus:ring-purple-400/30`;
+
+const labelStyle = 'block text-white font-semibold text-sm mb-1';
+const errorStyle = 'text-red-300 text-xs mt-0.5';
+
 const Register = () => {
   const {
     register,
@@ -39,14 +50,18 @@ const Register = () => {
         photoURL: photoURL,
       });
 
-      // ৪. MongoDB-তে ইউজার সেভ
+      // ৪. OTP পাঠানো
       const userInfo = {
         name: data.name,
         email: data.email,
         photo: photoURL,
         role: data.role,
       };
-      const otpRes = await axiosSecure.post('/send-otp', userInfo);
+      console.log('OTP request শুরু হচ্ছে...');
+
+      const otpRes = await axiosSecure.post('/send-otp', userInfo, {
+        timeout: 15000,
+      });
 
       console.log('OTP response:', otpRes.data);
 
@@ -54,7 +69,6 @@ const Register = () => {
         navigate('/verify-otp', { state: { userInfo } });
       }
     } catch (error) {
-      // যেকোনো ধাপে সমস্যা হলে একটাই error alert
       console.log(error);
       Swal.fire({
         icon: 'error',
@@ -67,118 +81,120 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center px-4">
-      <div className="card w-full mx-auto max-w-sm shrink-0 shadow-2xl bg-white/10 backdrop-blur-xl border border-white/20">
-        <form onSubmit={handleSubmit(onSubmit)} className="card-body">
-          <fieldset className="fieldset">
-            {/* Name */}
-            <label className="label text-black font-bold text-[18px]">
-              Name
-            </label>
-            <input
-              type="text"
-              {...register('name', { required: true })}
-              className="input bg-white/10 backdrop-blur-md border border-white/30 text-gray-900 placeholder-gray-900"
-              placeholder="Your name"
-            />
-            {errors.name?.type === 'required' && (
-              <p role="alert" className="text-red-600">
-                First name is required
-              </p>
-            )}
+    <div className="h-[calc(100vh-80px)] flex items-center justify-center px-4 overflow-hidden">
+      <div className="w-full max-w-md rounded-[30px] p-1.5 bg-white/5 backdrop-blur-2xl border border-white/30 shadow-[0_20px_50px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.5)]">
+        <div className="rounded-[24px] px-5 py-4">
+          <h2 className="text-xl font-bold text-white text-center mb-3">
+            Create Account
+          </h2>
 
-            {/* Photo */}
-            <label className="label text-black font-bold text-[18px]">
-              Photo
-            </label>
-            <input
-              type="file"
-              {...register('photo', { required: true })}
-              className="file-input bg-white/10 backdrop-blur-md border border-white/30 text-gray-900"
-            />
-            {errors.photo?.type === 'required' && (
-              <p role="alert" className="text-red-600">
-                First photo is required
-              </p>
-            )}
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-2.5">
+            {/* Name + Email পাশাপাশি */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={labelStyle}>Name</label>
+                <input
+                  type="text"
+                  {...register('name', { required: true })}
+                  className={inputStyle}
+                  placeholder="Your name"
+                />
+                {errors.name && <p className={errorStyle}>Name is required</p>}
+              </div>
 
-            {/* Email */}
-            <label className="label text-black font-bold text-[18px]">
-              Email
-            </label>
-            <input
-              type="email"
-              {...register('email', { required: true })}
-              className="input bg-white/10 backdrop-blur-md border border-white/30 text-gray-900 placeholder-gray-900"
-              placeholder="Email"
-            />
-            {errors.email?.type === 'required' && (
-              <p role="alert" className="text-red-600">
-                First email is required
-              </p>
-            )}
-
-            {/* Password */}
-            <label className="label text-black font-bold text-[18px]">
-              Password
-            </label>
-            <input
-              type="password"
-              {...register('password', {
-                required: true,
-                minLength: 6,
-                pattern:
-                  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/,
-              })}
-              className="input bg-white/10 backdrop-blur-md border border-white/30 text-gray-900 placeholder-gray-900"
-              placeholder="Password"
-            />
-            {errors.password?.type === 'required' && (
-              <p className="text-red-600">Password is required</p>
-            )}
-            {errors.password?.type === 'minLength' && (
-              <p className="text-red-600">
-                Password must be 6 characters or longer
-              </p>
-            )}
-            {errors.password?.type === 'pattern' && (
-              <p className="text-red-600">
-                Password must have at least one uppercase, one lowercase, one
-                number and one special character
-              </p>
-            )}
-            {/* Role (Job Seeker / Employer) */}
-            <label className="label text-black font-bold text-[18px]">
-              {' '}
-              Account Type{' '}
-            </label>
-            <select
-              {...register('role', { required: true })}
-              className="select select-bordered bg-white/10 backdrop-blur-md border border-white/30 text-gray-900"
-            >
-              <option value="" className="bg-white text-black">
-                Account Type
-              </option>
-              <option value="jobseeker" className="bg-white text-black">
-                Job Seeker
-              </option>
-              <option value="employer" className="bg-white text-black">
-                Employer
-              </option>
-            </select>
-            {errors.role && <p className="text-red-600">Role is required</p>}
-
-            <div>
-              <a className="link link-hover text-white">Forgot password?</a>
+              <div>
+                <label className={labelStyle}>Email</label>
+                <input
+                  type="email"
+                  {...register('email', { required: true })}
+                  className={inputStyle}
+                  placeholder="Email"
+                />
+                {errors.email && (
+                  <p className={errorStyle}>Email is required</p>
+                )}
+              </div>
             </div>
 
-            {/* iOS style button */}
+            {/* Photo + Account Type পাশাপাশি */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={labelStyle}>Photo</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  {...register('photo', { required: true })}
+                  className="w-full h-10 text-white/90 text-xs rounded-xl
+                bg-gradient-to-b from-white/30 to-white/10
+                border border-white/40 cursor-pointer
+                file:mr-2 file:h-full file:px-3 file:border-0
+                file:bg-white/25 file:text-white file:text-xs
+                file:font-semibold file:cursor-pointer"
+                />
+                {errors.photo && (
+                  <p className={errorStyle}>Photo is required</p>
+                )}
+              </div>
+
+              <div>
+                <label className={labelStyle}>Account Type</label>
+                <select
+                  {...register('role', { required: true })}
+                  className={`${inputStyle} cursor-pointer`}
+                >
+                  <option value="" className="bg-white text-black">
+                    Select
+                  </option>
+                  <option value="jobseeker" className="bg-white text-black">
+                    Job Seeker
+                  </option>
+                  <option value="employer" className="bg-white text-black">
+                    Employer
+                  </option>
+                </select>
+                {errors.role && <p className={errorStyle}>Required</p>}
+              </div>
+            </div>
+
+            {/* Password */}
+            <div>
+              <label className={labelStyle}>Password</label>
+              <input
+                type="password"
+                {...register('password', {
+                  required: true,
+                  minLength: 6,
+                  pattern:
+                    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/,
+                })}
+                className={inputStyle}
+                placeholder="Password"
+              />
+              {errors.password?.type === 'required' && (
+                <p className={errorStyle}>Password is required</p>
+              )}
+              {errors.password?.type === 'minLength' && (
+                <p className={errorStyle}>Minimum 6 characters</p>
+              )}
+              {errors.password?.type === 'pattern' && (
+                <p className={errorStyle}>
+                  Need uppercase, lowercase, number and special character
+                </p>
+              )}
+            </div>
+
+            {/* Register button */}
             <button
-              className="px-5 py-2.5 rounded-lg text-white font-semibold
-             bg-gradient-to-r from-purple-600 to-blue-600
-             hover:from-purple-700 hover:to-blue-700
-             shadow-lg shadow-purple-500/20
-             transition-all duration-300 cursor-pointer"
+              type="submit"
+              disabled={loading}
+              className="w-full px-5 py-2.5 rounded-xl text-white font-semibold
+            bg-gradient-to-r from-purple-600 to-blue-600
+            hover:from-purple-700 hover:to-blue-700
+            shadow-[0_6px_16px_rgba(147,51,234,0.4),inset_0_1px_0_rgba(255,255,255,0.5)]
+            transition-all duration-300 cursor-pointer
+            flex items-center justify-center gap-2
+            active:scale-95
+            disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <>
@@ -190,15 +206,21 @@ const Register = () => {
               )}
             </button>
 
-            <p className="text-white">
-              Don't have any account?{' '}
-              <Link className="text-white font-semibold underline" to="/login">
+            <p className="text-white/90 text-center text-sm">
+              Already have an account?{' '}
+              <Link
+                className="text-blue-300 font-semibold underline"
+                to="/login"
+              >
                 Login
               </Link>
             </p>
-          </fieldset>
-        </form>
-        <SocialLogin></SocialLogin>
+          </form>
+
+          <div className="mt-2">
+            <SocialLogin></SocialLogin>
+          </div>
+        </div>
       </div>
     </div>
   );

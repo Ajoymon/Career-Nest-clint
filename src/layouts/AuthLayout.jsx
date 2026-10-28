@@ -1,7 +1,7 @@
 import React from 'react';
 import Logo from '../components/Logo/Logo';
 import { Outlet } from 'react-router';
-import bgimg from '../assets/sasun-bughdaryan-Dy2Q0kR07dA-unsplash.jpg';
+import bgimg from '../assets/Better Skills, Jobs and Futures.png';
 
 const AuthLayout = () => {
   return (

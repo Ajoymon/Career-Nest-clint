@@ -1,11 +1,12 @@
 import React from 'react';
-import logo from '../../assets/ChatGPT Image Aug 30, 2026, 04_13_43 PM.png';
+import { Link } from 'react-router';
+import logo from '../../assets/Gemini_Generated_Image_2wfx92wfx92wfx92-removebg-preview.png';
 
 const Logo = () => {
   return (
-    <div className="flex items-center">
-      <img src={logo} alt="Site Logo" className="h-16" />
-    </div>
+    <Link to="/" className="flex items-center">
+      <img src={logo} alt="Site Logo" className="h-12 w-auto object-contain" />
+    </Link>
   );
 };
 
